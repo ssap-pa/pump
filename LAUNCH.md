@@ -33,3 +33,15 @@ GitHub에 push하는 것만으로 자동 배포되지는 않습니다.
 - AdSense ssapclass.com 소유권 인증 및 심사 미완료, 광고 게재 미구현.
 - 기존 Sites 데이터/파일은 아직 이전하지 않았습니다. 사용자 ID 매핑과 소유권 검증 없이 합치지 않습니다.
 - PWA는 설치 메타데이터를 제공하며 오프라인 쓰기는 미구현입니다.
+
+## 자동 배포 연결 준비 (승인 대기)
+Cloudflare Worker Settings > Builds에서 기존 seolbinote를 다음 설정으로 연결합니다.
+- 저장소: ssap-pa/pump
+- Production branch: main
+- Root directory: /
+- Build command: npm run ci:check
+- Deploy command: npm run deploy
+- Node 버전: 24
+- 비운영 브랜치 자동 배포: 비활성화
+
+npm run deploy가 빌드를 포함합니다. API 키는 기존 Worker Secrets를 유지하며 GitHub 소스에 추가하지 않습니다. GitHub 연결 승인 전까지 push 자동 배포는 활성화되지 않습니다.
