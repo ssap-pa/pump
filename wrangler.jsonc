@@ -1,0 +1,43 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "seolbinote",
+  "main": "worker.ts",
+  "compatibility_date": "2026-09-13",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "seolbinote-db",
+      "database_id": "00b2a53a-df9f-4121-9c20-bc002d201472",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "FILES",
+      "bucket_name": "seolbinote-files"
+    }
+  ],
+  "vars": {
+    "BETTER_AUTH_URL": "https://pump.ssapclass.com",
+    "BILLING_ORIGIN": "https://pump.ssapclass.com",
+    "BILLING_RENEWALS_ENABLED": "false"
+  },
+  "triggers": {
+    "crons": [
+      "*/15 * * * *"
+    ]
+  },
+  "account_id": "6996f140be742c5ec0b383102a702809",
+  "routes": [
+    {
+      "pattern": "pump.ssapclass.com",
+      "custom_domain": true,
+      "zone_name": "ssapclass.com"
+    }
+  ]
+}

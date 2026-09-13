@@ -1,0 +1,9 @@
+# Copy to .dev.vars locally; upload secrets with wrangler secret put.
+# Never paste keys into chat, commit them, or use live Toss keys during testing.
+TOSS_CLIENT_KEY=
+TOSS_SECRET_KEY=
+BILLING_ENCRYPTION_KEY=
+BETTER_AUTH_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+OPENAI_API_KEY=

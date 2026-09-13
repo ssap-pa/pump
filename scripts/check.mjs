@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {DatabaseSync} from 'node:sqlite';
+import {subtotal,total,exampleItems} from '../lib/domain.ts';
+assert.equal(subtotal(exampleItems),5590000);
+assert.equal(total({items:exampleItems,vat:true}),6149000);
+assert.equal(total({items:exampleItems,vat:false}),5590000);
+assert.equal(total({items:[]}),0);
+assert.equal(total({items:[{qty:1.5,price:101}],vat:true}),167);
+const db=new DatabaseSync(':memory:');
+db.exec(fs.readFileSync('drizzle/0000_records.sql','utf8'));
+db.prepare('INSERT INTO records VALUES(?,?,?,?,?,?)').run('a','owner-a','site','','{}','2026-09-08');
+assert.equal(db.prepare('SELECT id FROM records WHERE id=? AND owner=?').get('a','owner-b'),undefined);
+assert.equal(db.prepare('SELECT id FROM records WHERE id=? AND owner=?').get('a','owner-a').id,'a');
+console.log('PASS: example totals, VAT toggle, empty quote, fractional quantities, schema migration, owner-scoped queries.');

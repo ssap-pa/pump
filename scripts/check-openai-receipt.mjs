@@ -1,0 +1,23 @@
+import fs from 'node:fs';import ts from 'typescript';import assert from 'node:assert/strict';
+const compile=s=>'data:text/javascript;base64,'+Buffer.from(ts.transpileModule(s,{compilerOptions:{target:ts.ScriptTarget.ESNext,module:ts.ModuleKind.ESNext}}).outputText).toString('base64');
+const receipt=compile(fs.readFileSync('lib/receipt.ts','utf8'));
+const module=compile(fs.readFileSync('lib/openai-receipt.ts','utf8').replace("from './receipt'","from '"+receipt+"'"));
+const {extractReceipt}=await import(module);
+const p={supplyAmount:375000,vat:37500,discount:5000,vendor:'한빛 철물',date:'2026-09-10',total:13000,items:[{name:'볼밸브 20A',quantity:2,unitPrice:5000,amount:10000}],rawText:'한빛 철물'};
+let payload={status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(p)}]}],usage:{input_tokens:2000,output_tokens:300}},status=200,calls=0;
+globalThis.fetch=async(url,opts)=>{calls++;assert.equal(url,'https://api.openai.com/v1/responses');const body=JSON.parse(opts.body);assert.equal(body.model,'gpt-5-nano');assert.equal(body.store,false);assert.equal(body.text.format.strict,true);return Response.json(payload,{status});};
+const result=await extractReceipt(new ArrayBuffer(8),'image/png','test-only');assert.equal(result.supplyAmount,375000);assert.equal(result.vat,37500);assert.equal(result.discount,5000);assert.equal(result.provider,'gpt-5-nano');assert.equal(result.status,'needs_review');assert.equal(result.items[0].name,'볼밸브 20A');
+payload={...payload,status:'incomplete'};await assert.rejects(()=>extractReceipt(new ArrayBuffer(8),'image/png','test-only'),/전체/);
+payload={...payload,status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({...p,total:-1})}]}]};await assert.rejects(()=>extractReceipt(new ArrayBuffer(8),'image/png','test-only'),/올바르지/);
+status=429;await assert.rejects(()=>extractReceipt(new ArrayBuffer(8),'image/png','test-only'),/사용 한도/);
+const before=calls;await assert.rejects(()=>extractReceipt(new ArrayBuffer(8),'image/png',''),/키/);assert.equal(calls,before);
+console.log('PASS: mocked OpenAI response parsing, request format, incomplete/invalid response, quota and missing key. No live OCR test performed.');
+
+const {receiptBalance,validPurchase}=await import(receipt);
+assert.match(receiptBalance({...result,total:412500}),/일치/);
+assert.match(receiptBalance({...result,total:400000}),/차이/);
+assert.match(receiptBalance({...result,supplyAmount:null,vat:null,total:412500}),/확인/);
+assert.equal(validPurchase({...result,vat:-1}),false);
+assert.equal(validPurchase({...result,discount:'5000'}),false);
+assert.equal(validPurchase({...result,supplyAmount:undefined,vat:undefined,discount:undefined}),true);
+console.log('PASS: separate monetary fields, VAT balance, no double discount, missing fields, legacy compatibility and invalid values');
