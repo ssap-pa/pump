@@ -13,7 +13,7 @@
     "format": "oxfmt",
     "db:generate": "drizzle-kit generate",
     "deploy": "node scripts/check-launch.mjs && npm run build && wrangler deploy --config dist/server/wrangler.json",
-    "ci:check": "tsc --noEmit && node --test --test-isolation=none tests/billing.test.mjs tests/site-quota.test.mjs"
+    "ci:check": "tsc --noEmit && node --test --test-isolation=none tests/billing.test.mjs tests/site-quota.test.mjs tests/guest-records.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",

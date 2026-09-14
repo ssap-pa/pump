@@ -3,7 +3,7 @@ import { getChatGPTUser } from '@/app/chatgpt-auth';
 import { db } from '@/db/storage';
 import type { Item } from '@/lib/domain';
 type StoredRow={id:string;kind:string;parent:string;data:string;created:string};
-type WriteBody={id?:string;kind:string;parent?:string;data:{name?:string;amount?:number;items?:Item[];[key:string]:unknown}};
+type WriteBody={guestId?:string;id?:string;kind:string;parent?:string;data:{name?:string;amount?:number;items?:Item[];[key:string]:unknown}};
 const json = (v: unknown, s = 200) => Response.json(v, { status: s });
 export async function GET() { const u = await getChatGPTUser(); if (!u)
     return json({ error: '로그인 후 이용해 주세요.' }, 401); const r = await db().prepare('SELECT id,kind,parent,data,created FROM records WHERE owner=? ORDER BY created DESC').bind(u.userId).all<StoredRow>(); return json(r.results.map((r) => ({ ...r, data: JSON.parse(r.data) }))); }
@@ -51,7 +51,12 @@ export async function POST(req: Request) {
         }
         b.data.attachments = attachments;
     }
-    const id = b.id || crypto.randomUUID();
+    if(b.guestId && (b.id || !/^[0-9a-f-]{36}$/i.test(b.guestId)))return json({error:'기기 기록 식별자를 확인해 주세요.'},400);
+    const id = b.guestId ? `guest:${u.userId}:${b.guestId}` : b.id || crypto.randomUUID();
+    if(b.guestId){
+        const previous=await db().prepare('SELECT id FROM records WHERE id=? AND owner=?').bind(id,u.userId).first();
+        if(previous)return json({id});
+    }
     if (b.id) {
         const old = await db().prepare('SELECT kind,parent FROM records WHERE id=? AND owner=?').bind(id, u.userId).first<{kind:string;parent:string}>();
         if (!old)

@@ -1,3 +1,3 @@
 import Desk from './desk';
-import {requireChatGPTUser} from './chatgpt-auth';
-export default async function Page(){const user=await requireChatGPTUser('/');return <Desk draftOwner={user.userId}/>;}
+import {getChatGPTUser} from './chatgpt-auth';
+export default async function Page(){const user=await getChatGPTUser();return <Desk draftOwner={user?.userId ?? null}/>;}

@@ -26,7 +26,7 @@ useEffect(()=>{onBlockNavigation(draft.dirty&&draft.unavailable);return()=>onBlo
     change('items', exampleItems);
 else
     toast.info('현재 항목을 비운 뒤 예시를 불러올 수 있습니다.'); }}>첨부 예시 불러오기</button></div><div className="tablewrap quoteitems"><Table><TableHeader><TableRow>{['공사 항목', '단위', '수량', '단가 (원)', '금액 (원)', '비고', ''].map((t, n) => <TableHead key={n}>{t}</TableHead>)}</TableRow></TableHeader><TableBody>{q.items.map((i: Item, n: number) => <TableRow key={n}><TableCell><input className="itemname" aria-label={`${n + 1}번 공사 항목`} value={i.name} onChange={e => update(n, 'name', e.target.value)}/></TableCell><TableCell><input aria-label={`${n + 1}번 단위`} value={i.unit} onChange={e => update(n, 'unit', e.target.value)}/></TableCell><TableCell><input type="number" min="0" step="any" aria-label={`${n + 1}번 수량`} value={i.qty} onChange={e => update(n, 'qty', Math.max(0, Number(e.target.value)))}/></TableCell><TableCell><input type="number" min="0" aria-label={`${n + 1}번 단가`} value={i.price} onChange={e => update(n, 'price', Math.max(0, Number(e.target.value)))}/></TableCell><TableCell>{money(i.qty * i.price)}</TableCell><TableCell><input aria-label={`${n + 1}번 비고`} value={i.memo} onChange={e => update(n, 'memo', e.target.value)}/></TableCell><TableCell><button className="btn" aria-label={`${n + 1}번 항목 삭제`} onClick={() => change('items', q.items.filter((_: Item, j: number) => n !== j))}><Trash2 size={16}/></button></TableCell></TableRow>)}</TableBody></Table></div><div className="actions"><button className="btn" onClick={() => change('items', [...q.items, blankItem()])}><Plus size={16}/>항목 추가</button><button className="btn" onClick={() => change('items', [...q.items, { name: '급수배관 설치', unit: 'm', qty: 1, price: 0, memo: '재질·구경 확인' }])}>급수배관 항목 추가</button></div><div className="row" style={{ borderTop: '1px solid #dce3ed', paddingTop: 20 }}><div className="muted">공급가 {money(subtotal(q.items))}원 · 부가세 {money(q.vat ? Math.round(subtotal(q.items) * .1) : 0)}원</div><strong style={{ fontSize: 26, color: 'var(--primary)' }}>{money(total(q))}원</strong></div></div><div className="panel stack"><label className="field">주요 확인사항<textarea value={q.notes} onChange={e => change('notes', e.target.value)} placeholder="예: 철거 포함 / 마감 복구 별도 / 추가 공사는 금액 협의 후 진행"/></label><Field label="하단 안내 문구" value={q.footer} onChange={(v) => change('footer', v)}/></div><div className="quote-savebar noprint"><div><span className="muted">견적 합계</span><strong>{money(total(q))}원</strong></div><button className="btn" onClick={()=>setPreview(true)}>견적 확인</button><button className="btn primary" disabled={busy} onClick={async()=>{if(await onSave(q))draft.saved(undefined,q);}}>{busy?"저장 중…":"견적 저장"}</button></div></>}</div>; }
-export function Notes({ draftOwner, onBlockNavigation, site, rows, busy, onSave, onRefresh }: NotesProps) {
+export function Notes({ onRequireLogin, draftOwner, onBlockNavigation, site, rows, busy, onSave, onRefresh }: NotesProps) {
     const draft=useLocalDraft(draftOwner?`pump:draft:${draftOwner}:${site.id}:note`:null,{text:'',date:today(),stage:'시공 중',attachments:[] as Attachment[]},validNote);
     const {text,date,stage,attachments}=draft.value;
     const setText=(value:SetStateAction<string>)=>draft.update(p=>({...p,text:typeof value==='function'?value(p.text):value}));
@@ -41,7 +41,7 @@ export function Notes({ draftOwner, onBlockNavigation, site, rows, busy, onSave,
         rec.current.stop(); stream.current?.getTracks().forEach(t => t.stop()); }, []);
     async function upload(file: File) { if (file.size > 20000000)
         throw new Error('파일은 20MB 이하로 올려 주세요.'); const form = new FormData(); form.append('file', file); form.append('parent', site.id); const result = await call<Attachment>('/api/files', { method: 'POST', body: form }); setAttachments(a => [...a, result]); return result; }
-    async function uploadList(fs: FileList | null) { if (!fs)
+    async function uploadList(fs: FileList | null) { if(onRequireLogin){onRequireLogin();return;} if (!fs)
         return; setUploading(true); try {
         for (const f of Array.from(fs))
             await upload(f);
@@ -69,7 +69,7 @@ export function Notes({ draftOwner, onBlockNavigation, site, rows, busy, onSave,
     catch {
         setListening(false); setSpeechHelp(speechErrorMessage('unknown'));
     } }
-    async function record() { if (recording) {
+    async function record() { if(onRequireLogin){onRequireLogin();return;} if (recording) {
         rec.current?.stop();
         return;
     } try {
